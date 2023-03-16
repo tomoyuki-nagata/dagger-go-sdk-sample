@@ -8,10 +8,7 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-	// repository.SetupRemoteEngine(ctx)
-
-	client, err := dagger.NewDaggerClientConnector(ctx).K8sConnect("default", "dagger-engin")
+	client, err := dagger.NewDaggerClientConnector(context.Background()).K8sConnect("default", "dagger-engin")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
