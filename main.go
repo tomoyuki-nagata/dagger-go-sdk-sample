@@ -9,22 +9,24 @@ import (
 
 func main() {
 	ctx := context.Background()
-	client, err := dagger.NewDaggerClient(ctx, true)
+	// repository.SetupRemoteEngine(ctx)
+
+	client, err := dagger.NewDaggerClientConnector(ctx).K8sConnect("default", "dagger-engin")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer client.Close()
 
-	// if err := client.GoTest(ctx, "./sample-app", "./tmp/test_report"); err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(1)
-	// }
-
-	if err := client.GoDoc(ctx, "./sample-app"); err != nil {
+	if err := client.GoTest(ctx, "./sample-app", "./tmp/test_report"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	// if err := client.GoDoc(ctx, "./sample-app"); err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
 
 	// if err := client.GoVulnCheck(ctx, "./sample-app"); err != nil {
 	// 	fmt.Println(err)

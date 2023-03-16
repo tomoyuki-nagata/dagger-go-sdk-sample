@@ -8,23 +8,26 @@ import (
 	"dagger.io/dagger"
 )
 
-type Container = *dagger.Container
-
-type DaggerClient struct {
-	client *dagger.Client
+type DaggerClientConnector struct {
+	ctx context.Context
 }
 
-/*
-DaggerのClientを作成する。
-*/
-func NewDaggerClient(ctx context.Context, isOutputLog bool) (DaggerClient, error) {
+func (d DaggerClientConnector) DefaultConnect() (DaggerClient, error) {
+	return d.connect(d.ctx)
+}
+
+func (d DaggerClientConnector) K8sConnect(kubeNamespace, daggerEnginName string) (DaggerClient, error) {
+	err := setupRemoteEngine(d.ctx, kubeNamespace, daggerEnginName)
+	if err != nil {
+		return DaggerClient{}, err
+	}
+	return d.connect(d.ctx)
+}
+
+func (DaggerClientConnector) connect(ctx context.Context) (DaggerClient, error) {
 	var client *dagger.Client
 	var err error
-	if isOutputLog {
-		client, err = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
-	} else {
-		client, err = dagger.Connect(ctx)
-	}
+	client, err = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
 
 	if err != nil {
 		return DaggerClient{}, err
@@ -33,6 +36,18 @@ func NewDaggerClient(ctx context.Context, isOutputLog bool) (DaggerClient, error
 		client: client,
 	}, nil
 }
+
+func NewDaggerClientConnector(ctx context.Context) DaggerClientConnector {
+	return DaggerClientConnector{
+		ctx: ctx,
+	}
+}
+
+type DaggerClient struct {
+	client *dagger.Client
+}
+
+type Container = *dagger.Container
 
 /*
 sourceDirで「gotestsum --junitfile /report/report.xml -- ./...」を行い、レポートを出力する。
