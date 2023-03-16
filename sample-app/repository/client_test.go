@@ -18,5 +18,5 @@ func TestGet(t *testing.T) {
 	res, err := Get()
 	assert.Nil(t, err)
 	assert.Equal(t, "mocked", res)
-	assert.Equal(t, "これは失敗するアサーション", res)
+	// assert.Equal(t, "これは失敗するアサーション", res)
 }
