@@ -34,6 +34,7 @@ func (DaggerClientConnector) connect(ctx context.Context) (DaggerClient, error) 
 	}
 	return DaggerClient{
 		client: client,
+		ctx:    ctx,
 	}, nil
 }
 
@@ -45,6 +46,7 @@ func NewDaggerClientConnector(ctx context.Context) DaggerClientConnector {
 
 type DaggerClient struct {
 	client *dagger.Client
+	ctx    context.Context
 }
 
 type Container = *dagger.Container
@@ -52,7 +54,7 @@ type Container = *dagger.Container
 /*
 sourceDirで「gotestsum --junitfile /report/report.xml -- ./...」を行い、レポートを出力する。
 */
-func (c DaggerClient) GoTest(ctx context.Context, sourceDir, outputDir string) error {
+func (c DaggerClient) GoTest(sourceDir, outputDir string) error {
 	// ローカルのsourceDirのディレクトリを取得
 	src := c.client.Host().Directory(sourceDir)
 
@@ -63,19 +65,19 @@ func (c DaggerClient) GoTest(ctx context.Context, sourceDir, outputDir string) e
 		WithExec([]string{"go", "install", "gotest.tools/gotestsum@v1.9.0"}).
 		WithExec([]string{"sh", "-c", "gotestsum --junitfile /report/report.xml -- ./... || touch fail.txt"})
 
-	log, err := test.Stdout(ctx)
+	log, err := test.Stdout(c.ctx)
 	fmt.Println(log)
 	if err != nil {
 		return err
 	}
 
-	_, err = test.Directory("/report").Export(ctx, outputDir)
+	_, err = test.Directory("/report").Export(c.ctx, outputDir)
 	if err != nil {
 		return err
 	}
 
 	// エラーがない=fail.txtが存在するため、testに失敗したとみなす
-	_, err = test.Directory("/src").File("fail.txt").Contents(ctx)
+	_, err = test.Directory("/src").File("fail.txt").Contents(c.ctx)
 	if err == nil {
 		return fmt.Errorf("テストが失敗しました")
 	}
@@ -84,7 +86,7 @@ func (c DaggerClient) GoTest(ctx context.Context, sourceDir, outputDir string) e
 
 // TODO: 下記を参考にしたが動かない
 // https://docs.dagger.io/757394/use-service-containers
-func (c DaggerClient) GoDoc(ctx context.Context, sourceDir string) error {
+func (c DaggerClient) GoDoc(sourceDir string) error {
 	// ローカルのsourceDirのディレクトリを取得
 	src := c.client.Host().Directory(sourceDir)
 
@@ -105,7 +107,7 @@ func (c DaggerClient) GoDoc(ctx context.Context, sourceDir string) error {
 		From("alpine").
 		WithServiceBinding("www", httpSrv).
 		WithExec([]string{"wget", "-O-", "http://www:8080"}).
-		Stdout(ctx)
+		Stdout(c.ctx)
 
 	if err != nil {
 		panic(err)
@@ -115,7 +117,7 @@ func (c DaggerClient) GoDoc(ctx context.Context, sourceDir string) error {
 	return nil
 }
 
-func (c DaggerClient) GoVulnCheck(ctx context.Context, sourceDir string) error {
+func (c DaggerClient) GoVulnCheck(sourceDir string) error {
 	// ローカルのsourceDirのディレクトリを取得
 	src := c.client.Host().Directory(sourceDir)
 
@@ -126,7 +128,7 @@ func (c DaggerClient) GoVulnCheck(ctx context.Context, sourceDir string) error {
 		WithExec([]string{"go", "install", "golang.org/x/vuln/cmd/govulncheck@v0.0.0-20230309043308-bbc736fc3bc1"}).
 		WithExec([]string{"govulncheck", "./..."})
 
-	log, err := govulncheck.Stdout(ctx)
+	log, err := govulncheck.Stdout(c.ctx)
 	if err != nil {
 		return err
 	}
@@ -134,7 +136,7 @@ func (c DaggerClient) GoVulnCheck(ctx context.Context, sourceDir string) error {
 	return nil
 }
 
-func (c DaggerClient) ImageBuild(ctx context.Context, dockerfilePath string) (*dagger.Container, error) {
+func (c DaggerClient) ImageBuild(dockerfilePath string) (*dagger.Container, error) {
 	// ローカルのsourceDirのディレクトリを取得
 	src := c.client.Host().Directory(dockerfilePath)
 
@@ -142,9 +144,9 @@ func (c DaggerClient) ImageBuild(ctx context.Context, dockerfilePath string) (*d
 	return image, nil
 }
 
-func (c DaggerClient) Push(ctx context.Context, repo string, platformVariants []Container) (string, error) {
+func (c DaggerClient) Push(repo string, platformVariants []Container) (string, error) {
 	response, err := c.client.Container().
-		Publish(ctx, repo, dagger.ContainerPublishOpts{
+		Publish(c.ctx, repo, dagger.ContainerPublishOpts{
 			PlatformVariants: platformVariants,
 		})
 	if err != nil {
