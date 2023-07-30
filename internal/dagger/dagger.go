@@ -52,7 +52,7 @@ type DaggerClient struct {
 type Container = *dagger.Container
 
 /*
-sourceDirで「gotestsum --junitfile /report/report.xml -- ./...」を行い、レポートを出力する。
+sourceDirで「gotestsum --junitfile /report/report.xml -- ./...」を実行し、outputDirにレポートを出力する。
 */
 func (c DaggerClient) GoTest(sourceDir, outputDir string) error {
 	// ローカルのsourceDirのディレクトリを取得
@@ -84,36 +84,43 @@ func (c DaggerClient) GoTest(sourceDir, outputDir string) error {
 	return nil
 }
 
-// TODO: 下記を参考にしたが動かない
-// https://docs.dagger.io/757394/use-service-containers
-func (c DaggerClient) GoDoc(sourceDir string) error {
+/*
+godocサーバーを起動し、静的ページとして出力する。
+参考URL: https://docs.dagger.io/757394/use-service-containers
+*/
+
+func (c DaggerClient) GoDoc(sourceDir, outputDir string) error {
 	// ローカルのsourceDirのディレクトリを取得
 	src := c.client.Host().Directory(sourceDir)
 
-	// create HTTP service container with exposed port 8080
+	// godocコマンドでドキュメントのウェブサーバーを起動する
 	httpSrv := c.client.Container().
 		From("golang:1.20.1").
 		WithMountedDirectory("/src", src).
 		WithWorkdir("/src").
-		// WithExec([]string{"go", "run", "main.go"}).
 		WithExec([]string{"go", "install", "golang.org/x/tools/cmd/godoc@latest"}).
-		WithExec([]string{"sh", "-c", "godoc -http localhost:8080"}).
-		// WithExec([]string{"sh", "-c", "go run main.go > /dev/null"}).
-		WithExposedPort(8080)
+		WithExec([]string{"sh", "-c", "godoc -http=:6060"}).
+		WithExposedPort(6060)
 
-	// create client container with service binding
-	// access HTTP service and print result
-	val, err := c.client.Container().
-		From("alpine").
-		WithServiceBinding("www", httpSrv).
-		WithExec([]string{"wget", "-O-", "http://www:8080"}).
-		Stdout(c.ctx)
+	// godocサーバーのページをwgetを利用してダウンロードする
+	godoc := c.client.Container().
+		From("ubuntu:22.04").
+		WithServiceBinding("godoc", httpSrv). // godocというエイリアスでサービスコンテナを登録
+		WithExec([]string{"sh", "-c", "apt-get update && apt-get install -y wget"}).
+		WithExec([]string{"sh", "-c", "wget -r -np -N -E -k --page-requisites http://godoc:6060/pkg/sample-app/ || echo 'finish'"}) // wgetのstatus codeが8になり後続の処理が失敗するため、エラーを握りつぶす
 
+	log, err := godoc.Stdout(c.ctx)
+	fmt.Println(log)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	fmt.Println(val)
+	//godocサーバーからダウンロードした静的ページをエクスポート
+	_, err = godoc.Directory("/godoc:6060").Export(c.ctx, outputDir)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// 皇居の住所を返却します。
 func Get() (string, error) {
 	rsp, err := http.Get("https://zipcloud.ibsnet.co.jp/api/search?zipcode=100-0001")
 	if err != nil {
