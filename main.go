@@ -21,32 +21,20 @@ func main() {
 	// 	os.Exit(1)
 	// }
 
-	if err := client.GoDoc("./sample-app", "./tmp/godoc"); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	// if err := client.GoDoc("./sample-app", "./tmp/godoc"); err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
 
 	// if err := client.GoVulnCheck("./sample-app"); err != nil {
 	// 	fmt.Println(err)
 	// 	os.Exit(1)
 	// }
 
-	// result, err := repository.DockerLogin(ctx)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(result)
-
-	// image, err := client.ImageBuild("./sample-app")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(1)
-	// }
-
-	// resp, err := client.Push(fmt.Sprintf("ttl.sh/sample-dagger-%.0f", math.Floor(rand.Float64()*10000000)), []dagger.Container{image})
-	// fmt.Println(resp)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(1)
-	// }
+	resp, err := client.PushByDockerFile("./sample-app", "docker.io", "username", "DOCKERHUB_PASSWORD", "username/sample:1.0")
+	fmt.Println(resp)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

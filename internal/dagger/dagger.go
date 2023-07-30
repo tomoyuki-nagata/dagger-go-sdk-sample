@@ -143,19 +143,15 @@ func (c DaggerClient) GoVulnCheck(sourceDir string) error {
 	return nil
 }
 
-func (c DaggerClient) ImageBuild(dockerfilePath string) (*dagger.Container, error) {
-	// ローカルのsourceDirのディレクトリを取得
+func (c DaggerClient) PushByDockerFile(dockerfilePath, registryUrl, username, passwordEnv, repository string) (string, error) {
+	fmt.Println(os.Getenv(passwordEnv))
+	password := c.client.SetSecret("password", os.Getenv(passwordEnv))
 	src := c.client.Host().Directory(dockerfilePath)
 
-	image := c.client.Container().Build(src)
-	return image, nil
-}
+	response, err := c.client.Container().Build(src).
+		WithRegistryAuth(registryUrl, username, password).
+		Publish(c.ctx, repository)
 
-func (c DaggerClient) Push(repo string, platformVariants []Container) (string, error) {
-	response, err := c.client.Container().
-		Publish(c.ctx, repo, dagger.ContainerPublishOpts{
-			PlatformVariants: platformVariants,
-		})
 	if err != nil {
 		return "", err
 	}
