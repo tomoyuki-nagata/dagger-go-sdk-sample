@@ -12,22 +12,22 @@ type DaggerClientConnector struct {
 	ctx context.Context
 }
 
-func (d DaggerClientConnector) DefaultConnect() (DaggerClient, error) {
-	return d.connect(d.ctx)
+func (d DaggerClientConnector) DefaultConnect(workDir string) (DaggerClient, error) {
+	return d.connect(d.ctx, workDir)
 }
 
-func (d DaggerClientConnector) K8sConnect(kubeNamespace, daggerEnginName string) (DaggerClient, error) {
+func (d DaggerClientConnector) K8sConnect(workDir, kubeNamespace, daggerEnginName string) (DaggerClient, error) {
 	err := setupRemoteEngine(d.ctx, kubeNamespace, daggerEnginName)
 	if err != nil {
 		return DaggerClient{}, err
 	}
-	return d.connect(d.ctx)
+	return d.connect(d.ctx, workDir)
 }
 
-func (DaggerClientConnector) connect(ctx context.Context) (DaggerClient, error) {
+func (DaggerClientConnector) connect(ctx context.Context, workDir string) (DaggerClient, error) {
 	var client *dagger.Client
 	var err error
-	client, err = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+	client, err = dagger.Connect(ctx, dagger.WithWorkdir(workDir), dagger.WithLogOutput(os.Stdout))
 
 	if err != nil {
 		return DaggerClient{}, err

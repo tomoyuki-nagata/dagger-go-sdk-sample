@@ -50,7 +50,7 @@ func setupRemoteEngine(ctx context.Context, kubeNamespace, podName string) error
 				Containers: []v1.Container{
 					{
 						Name:            podName,
-						Image:           "registry.dagger.io/engine:v0.4.0",
+						Image:           "registry.dagger.io/engine:v0.6.4",
 						SecurityContext: &v1.SecurityContext{Privileged: &privileged},
 					},
 				},

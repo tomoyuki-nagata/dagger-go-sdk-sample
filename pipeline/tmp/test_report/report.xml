@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="0" errors="0" time="4.136859">
+	<testsuite tests="0" failures="0" time="0.000000" name="sample-app" timestamp="2023-07-30T11:46:59Z">
+		<properties>
+			<property name="go.version" value="go1.20.1 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="0.004000" name="sample-app/repository" timestamp="2023-07-30T11:46:59Z">
+		<properties>
+			<property name="go.version" value="go1.20.1 linux/amd64"></property>
+		</properties>
+		<testcase classname="sample-app/repository" name="TestGet" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
